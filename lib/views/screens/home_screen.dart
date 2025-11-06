@@ -1,6 +1,7 @@
 // lib/views/screens/home_screen.dart
 
-import 'package:culturalbima/views/screens/katalog_screen.dart';
+import 'package:culturalbima/views/admin/admin_panel_screen.dart';
+import 'package:culturalbima/views/screens/katalog_budaya_screen.dart';
 import 'package:flutter/material.dart';
 import '../../core/constants/app_strings.dart';
 import 'peta_wisata_screen.dart';
@@ -60,6 +61,27 @@ class HomeScreen extends StatelessWidget {
                       MaterialPageRoute(
                         builder: (context) => const PetaWisataScreen(),
                       ),
+                    );
+                  },
+                ),
+                const SizedBox(height: 16),
+
+                _buildMenuCard(
+                  context: context,
+                  title: AppStrings.adminPanelTitle,
+                  subtitle: AppStrings.adminPanelSubtitle,
+                  icon: Icons.admin_panel_settings_outlined,
+                  gradient: const LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [Color(0xFF9E7CE3), Color(0xFF6B49C8)],
+                  ),
+                  onTap: () {
+                    Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const AdminPanelScreen(),
+                        )
                     );
                   },
                 ),

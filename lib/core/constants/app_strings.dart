@@ -58,4 +58,9 @@ class AppStrings {
   static const String errorDeleteData = 'Gagal menghapus data';
   static const String errorUploadPhoto = 'Gagal upload foto';
   static const String errorInvalidInput = 'Input tidak valid';
+
+  // Admin Panel
+  static const String adminPanelTitle = 'Panel Admin';
+  static const String adminPanelSubtitle = 'Kelola Budaya dan Wisata';
+  static const String adminPanelManageBudaya = 'Kelola Budaya';
 }

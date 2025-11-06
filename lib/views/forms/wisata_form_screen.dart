@@ -10,13 +10,20 @@ import '../../viewmodels/wisata_viewmodel.dart';
 import '../../core/utils/image_picker_helper.dart';
 import '../../core/constants/app_strings.dart';
 
+enum CrudMode { create, update }
+
 class WisataFormScreen extends StatefulWidget {
-  final WisataModel? wisata; // Null = Create mode, Ada value = Edit mode
+  final CrudMode mode;
+  final WisataModel? wisata; // Required jika mode = update
 
   const WisataFormScreen({
     super.key,
+    required this.mode,
     this.wisata,
-  });
+  }) : assert(
+  mode == CrudMode.create || (mode == CrudMode.update && wisata != null),
+  'wisata is required when mode is update',
+  );
 
   @override
   State<WisataFormScreen> createState() => _WisataFormScreenState();

@@ -1,11 +1,8 @@
 // lib/views/screens/budaya_detail_screen.dart
 
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import '../../data/models/budaya_model.dart';
-import '../../viewmodels/budaya_viewmodel.dart';
 import '../../core/constants/app_strings.dart';
-import 'package:culturalbima/views/forms/budaya_form_screen.dart';
 
 class BudayaDetailScreen extends StatelessWidget {
   final BudayaModel budaya;

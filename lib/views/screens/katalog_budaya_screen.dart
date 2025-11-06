@@ -1,6 +1,5 @@
 // lib/views/screens/katalog_budaya_screen.dart
 
-import 'package:culturalbima/views/forms/budaya_form_screen.dart';
 import 'package:culturalbima/views/widgets/common/empty_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -51,22 +50,6 @@ class _KatalogBudayaScreenState extends State<KatalogBudayaScreen> {
             tooltip: AppStrings.actionRefresh,
           ),
         ],
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () async {
-          final result = await Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const BudayaFormScreen(),
-            ),
-          );
-          if (result == true && mounted) {
-            context.read<BudayaViewModel>().refreshData();
-          }
-        },
-        icon: const Icon(Icons.add),
-        label: const Text('Tambah Budaya'),
-        backgroundColor: const Color(0xFF4A7C59),
       ),
       body: Column(
         children: [

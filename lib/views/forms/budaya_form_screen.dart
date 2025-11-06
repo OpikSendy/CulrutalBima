@@ -9,13 +9,20 @@ import '../../viewmodels/budaya_viewmodel.dart';
 import '../../core/utils/image_picker_helper.dart';
 import '../../core/constants/app_strings.dart';
 
+enum CrudMode { create, update }
+
 class BudayaFormScreen extends StatefulWidget {
-  final BudayaModel? budaya; // Null = Create mode, Ada value = Edit mode
+  final CrudMode mode;
+  final BudayaModel? budaya; // Required jika mode = update
 
   const BudayaFormScreen({
     super.key,
+    required this.mode,
     this.budaya,
-  });
+  }) : assert(
+  mode == CrudMode.create || (mode == CrudMode.update && budaya != null),
+  'budaya is required when mode is update',
+  );
 
   @override
   State<BudayaFormScreen> createState() => _BudayaFormScreenState();
