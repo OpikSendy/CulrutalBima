@@ -1,5 +1,6 @@
 // lib/views/screens/peta_wisata_screen.dart
 
+import 'package:culturalbima/views/maps/peta_wisata_maps_screen.dart';
 import 'package:culturalbima/views/widgets/common/empty_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -37,6 +38,16 @@ class _PetaWisataScreenState extends State<PetaWisataScreen> {
     super.dispose();
   }
 
+  // Navigasi ke Interactive Maps Screen
+  void _openInteractiveMaps() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const PetaWisataMapsScreen(),
+      ),
+    );
+  }
+
   Future<void> _openAllInMaps(List<WisataModel> wisataList) async {
     if (wisataList.isEmpty) return;
 
@@ -68,13 +79,19 @@ class _PetaWisataScreenState extends State<PetaWisataScreen> {
       appBar: AppBar(
         title: const Text(AppStrings.wisataTitle),
         actions: [
+          // Button ke Interactive Maps
+          IconButton(
+            icon: const Icon(Icons.map),
+            onPressed: _openInteractiveMaps,
+            tooltip: 'Peta Interaktif',
+          ),
           Consumer<WisataViewModel>(
             builder: (context, viewModel, child) {
               if (viewModel.wisataList.isNotEmpty) {
                 return IconButton(
-                  icon: const Icon(Icons.map_outlined),
+                  icon: const Icon(Icons.open_in_new),
                   onPressed: () => _openAllInMaps(viewModel.wisataList),
-                  tooltip: 'Lihat Semua di Maps',
+                  tooltip: 'Buka di Google Maps',
                 );
               }
               return const SizedBox.shrink();
@@ -94,7 +111,7 @@ class _PetaWisataScreenState extends State<PetaWisataScreen> {
           // Search Bar
           _buildSearchBar(),
 
-          // Stats Bar
+          // Stats Bar with Maps Button
           _buildStatsBar(),
 
           // Content (List/Loading/Error/Empty)
@@ -150,6 +167,20 @@ class _PetaWisataScreenState extends State<PetaWisataScreen> {
             ),
           ),
         ],
+      ),
+      // Floating Action Button untuk Quick Access ke Maps
+      floatingActionButton: Consumer<WisataViewModel>(
+        builder: (context, viewModel, child) {
+          if (viewModel.wisataList.isNotEmpty) {
+            return FloatingActionButton.extended(
+              onPressed: _openInteractiveMaps,
+              backgroundColor: const Color(0xFF8B6F47),
+              icon: const Icon(Icons.map),
+              label: const Text('Lihat Peta'),
+            );
+          }
+          return const SizedBox.shrink();
+        },
       ),
     );
   }
@@ -208,26 +239,48 @@ class _PetaWisataScreenState extends State<PetaWisataScreen> {
   Widget _buildStatsBar() {
     return Consumer<WisataViewModel>(
       builder: (context, viewModel, child) {
-        return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          color: const Color(0xFF8B6F47).withOpacity(0.1),
-          child: Row(
-            children: [
-              Icon(
-                Icons.location_on,
-                size: 20,
-                color: const Color(0xFF8B6F47),
-              ),
-              const SizedBox(width: 8),
-              Text(
-                'Total ${viewModel.wisataList.length} Destinasi Wisata',
-                style: const TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xFF8B6F47),
+        return InkWell(
+          onTap: viewModel.wisataList.isNotEmpty ? _openInteractiveMaps : null,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            color: const Color(0xFF8B6F47).withOpacity(0.1),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.location_on,
+                  size: 20,
+                  color: const Color(0xFF8B6F47),
                 ),
-              ),
-            ],
+                const SizedBox(width: 8),
+                Text(
+                  'Total ${viewModel.wisataList.length} Destinasi Wisata',
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF8B6F47),
+                  ),
+                ),
+                const Spacer(),
+                if (viewModel.wisataList.isNotEmpty)
+                  Row(
+                    children: const [
+                      Text(
+                        'Lihat Peta',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Color(0xFF8B6F47),
+                        ),
+                      ),
+                      SizedBox(width: 4),
+                      Icon(
+                        Icons.arrow_forward_ios,
+                        size: 12,
+                        color: Color(0xFF8B6F47),
+                      ),
+                    ],
+                  ),
+              ],
+            ),
           ),
         );
       },
@@ -377,26 +430,51 @@ class _PetaWisataScreenState extends State<PetaWisataScreen> {
                           const SizedBox(height: 24),
                         ],
 
-                        // Maps Button
-                        SizedBox(
-                          width: double.infinity,
-                          child: ElevatedButton.icon(
-                            onPressed: () async {
-                              final uri = Uri.parse(wisata.googleMapsUrl);
-                              if (await canLaunchUrl(uri)) {
-                                await launchUrl(
-                                  uri,
-                                  mode: LaunchMode.externalApplication,
-                                );
-                              }
-                            },
-                            icon: const Icon(Icons.map),
-                            label: const Text('Buka di Google Maps'),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF8B6F47),
-                              padding: const EdgeInsets.symmetric(vertical: 16),
+                        // Action Buttons
+                        Row(
+                          children: [
+                            // Google Maps Button
+                            Expanded(
+                              child: ElevatedButton.icon(
+                                onPressed: () async {
+                                  final uri = Uri.parse(wisata.googleMapsUrl);
+                                  if (await canLaunchUrl(uri)) {
+                                    await launchUrl(
+                                      uri,
+                                      mode: LaunchMode.externalApplication,
+                                    );
+                                  }
+                                },
+                                icon: const Icon(Icons.open_in_new),
+                                label: const Text('Google Maps'),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xFF8B6F47),
+                                  padding: const EdgeInsets.symmetric(vertical: 16),
+                                ),
+                              ),
                             ),
-                          ),
+                            const SizedBox(width: 12),
+
+                            // Interactive Map Button
+                            Expanded(
+                              child: OutlinedButton.icon(
+                                onPressed: () {
+                                  Navigator.pop(context);
+                                  _openInteractiveMaps();
+                                },
+                                icon: const Icon(Icons.map),
+                                label: const Text('Peta Lokal'),
+                                style: OutlinedButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(vertical: 16),
+                                  side: const BorderSide(
+                                    color: Color(0xFF8B6F47),
+                                    width: 2,
+                                  ),
+                                  foregroundColor: const Color(0xFF8B6F47),
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),
