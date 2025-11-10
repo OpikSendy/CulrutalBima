@@ -65,10 +65,12 @@ class _KatalogBudayaScreenState extends State<KatalogBudayaScreen> {
               builder: (context, viewModel, child) {
                 // Loading State
                 if (viewModel.isLoading) {
-                  return Column(
-                    children: List.generate(
-                      5,
-                          (index) => const ShimmerCard(),
+                  return SingleChildScrollView(
+                    child: Column(
+                      children: List.generate(
+                        5,
+                            (index) => const ShimmerCard(),
+                      ),
                     ),
                   );
                 }
@@ -95,6 +97,7 @@ class _KatalogBudayaScreenState extends State<KatalogBudayaScreen> {
                   onRefresh: () => viewModel.refreshData(),
                   child: ListView.builder(
                     physics: const AlwaysScrollableScrollPhysics(),
+                    padding: const EdgeInsets.only(bottom: 16),
                     itemCount: viewModel.budayaList.length,
                     itemBuilder: (context, index) {
                       final budaya = viewModel.budayaList[index];
@@ -140,6 +143,8 @@ class _KatalogBudayaScreenState extends State<KatalogBudayaScreen> {
             onPressed: () {
               _searchController.clear();
               context.read<BudayaViewModel>().searchBudaya('');
+              // Update UI untuk menghilangkan suffixIcon
+              setState(() {});
             },
           )
               : null,
@@ -178,12 +183,11 @@ class _KatalogBudayaScreenState extends State<KatalogBudayaScreen> {
       builder: (context, viewModel, child) {
         final categories = viewModel.getKategoriList();
 
-        return Container(
-          height: 50,
-          padding: const EdgeInsets.symmetric(vertical: 8),
+        return SizedBox(
+          height: 56, // Ukuran fixed untuk mencegah overflow
           child: ListView.builder(
             scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             itemCount: categories.length,
             itemBuilder: (context, index) {
               final kategori = categories[index];
@@ -192,7 +196,11 @@ class _KatalogBudayaScreenState extends State<KatalogBudayaScreen> {
               return Padding(
                 padding: const EdgeInsets.only(right: 8),
                 child: FilterChip(
-                  label: Text(kategori),
+                  label: Text(
+                    kategori,
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
+                  ),
                   selected: isSelected,
                   onSelected: (selected) {
                     viewModel.filterByKategori(kategori);
@@ -210,6 +218,7 @@ class _KatalogBudayaScreenState extends State<KatalogBudayaScreen> {
                     horizontal: 12,
                     vertical: 8,
                   ),
+                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   side: BorderSide(
                     color: isSelected
                         ? const Color(0xFF4A7C59)

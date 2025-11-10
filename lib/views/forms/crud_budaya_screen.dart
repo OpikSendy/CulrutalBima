@@ -66,8 +66,12 @@ class _CrudBudayaScreenState extends State<CrudBudayaScreen> {
             child: Consumer<BudayaViewModel>(
               builder: (context, viewModel, child) {
                 if (viewModel.isLoading) {
-                  return Column(
-                    children: List.generate(5, (index) => const ShimmerCard()),
+                  return SingleChildScrollView(
+                    child: Column(
+                      children: List.generate(
+                          5,
+                              (index) => const ShimmerCard()),
+                    ),
                   );
                 }
 
@@ -89,6 +93,7 @@ class _CrudBudayaScreenState extends State<CrudBudayaScreen> {
                 return RefreshIndicator(
                   onRefresh: () => viewModel.refreshData(),
                   child: ListView.builder(
+                    padding: const EdgeInsets.only(bottom: 16),
                     physics: const AlwaysScrollableScrollPhysics(),
                     itemCount: viewModel.budayaList.length,
                     itemBuilder: (context, index) {

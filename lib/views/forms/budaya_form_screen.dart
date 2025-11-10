@@ -168,77 +168,86 @@ class _BudayaFormScreenState extends State<BudayaFormScreen> {
         children: [
           Form(
             key: _formKey,
-            child: ListView(
-              padding: const EdgeInsets.all(20),
-              children: [
-                // Image Picker
-                _buildImagePicker(),
-                const SizedBox(height: 24),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                return SingleChildScrollView(
+                  padding: EdgeInsets.all(constraints.maxWidth > 600 ? 32 : 20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      // Image Picker
+                      _buildImagePicker(constraints),
+                      const SizedBox(height: 24),
 
-                // Nama
-                _buildTextField(
-                  controller: _namaController,
-                  label: 'Nama Budaya',
-                  hint: 'Contoh: Tari Peresean',
-                  icon: Icons.museum,
-                  validator: (value) {
-                    if (value == null || value.trim().isEmpty) {
-                      return 'Nama budaya harus diisi';
-                    }
-                    if (value.trim().length < 3) {
-                      return 'Nama budaya minimal 3 karakter';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 16),
-
-                // Kategori Dropdown
-                _buildKategoriDropdown(),
-                const SizedBox(height: 16),
-
-                // Asal Daerah
-                _buildTextField(
-                  controller: _asalDaerahController,
-                  label: 'Asal Daerah',
-                  hint: 'Contoh: Kabupaten Bima',
-                  icon: Icons.location_on,
-                ),
-                const SizedBox(height: 16),
-
-                // Deskripsi
-                _buildTextField(
-                  controller: _deskripsiController,
-                  label: 'Deskripsi',
-                  hint: 'Ceritakan tentang budaya ini...',
-                  icon: Icons.description,
-                  maxLines: 5,
-                  validator: (value) {
-                    if (value != null && value.trim().length > 1000) {
-                      return 'Deskripsi maksimal 1000 karakter';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 32),
-
-                // Submit Button
-                SizedBox(
-                  height: 50,
-                  child: ElevatedButton(
-                    onPressed: _isLoading ? null : _submitForm,
-                    child: Text(
-                      isEditMode
-                          ? AppStrings.actionSave
-                          : AppStrings.actionAdd,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
+                      // Nama
+                      _buildTextField(
+                        controller: _namaController,
+                        label: 'Nama Budaya',
+                        hint: 'Contoh: Tari Peresean',
+                        icon: Icons.museum,
+                        validator: (value) {
+                          if (value == null || value.trim().isEmpty) {
+                            return 'Nama budaya harus diisi';
+                          }
+                          if (value.trim().length < 3) {
+                            return 'Nama budaya minimal 3 karakter';
+                          }
+                          return null;
+                        },
                       ),
-                    ),
+                      const SizedBox(height: 16),
+
+                      // Kategori Dropdown
+                      _buildKategoriDropdown(),
+                      const SizedBox(height: 16),
+
+                      // Asal Daerah
+                      _buildTextField(
+                        controller: _asalDaerahController,
+                        label: 'Asal Daerah',
+                        hint: 'Contoh: Kabupaten Bima',
+                        icon: Icons.location_on,
+                      ),
+                      const SizedBox(height: 16),
+
+                      // Deskripsi
+                      _buildTextField(
+                        controller: _deskripsiController,
+                        label: 'Deskripsi',
+                        hint: 'Ceritakan tentang budaya ini...',
+                        icon: Icons.description,
+                        maxLines: 5,
+                        validator: (value) {
+                          if (value != null && value.trim().length > 1000) {
+                            return 'Deskripsi maksimal 1000 karakter';
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 32),
+
+                      // Submit Button
+                      SizedBox(
+                        height: 50,
+                        child: ElevatedButton(
+                          onPressed: _isLoading ? null : _submitForm,
+                          child: Text(
+                            isEditMode
+                                ? AppStrings.actionSave
+                                : AppStrings.actionAdd,
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ),
+                      // Extra padding untuk scroll
+                      SizedBox(height: MediaQuery.of(context).viewInsets.bottom + 20),
+                    ],
                   ),
-                ),
-              ],
+                );
+              },
             ),
           ),
 
@@ -267,7 +276,10 @@ class _BudayaFormScreenState extends State<BudayaFormScreen> {
     );
   }
 
-  Widget _buildImagePicker() {
+  Widget _buildImagePicker(BoxConstraints constraints) {
+    // Responsive height untuk image picker
+    final imageHeight = constraints.maxWidth > 600 ? 250.0 : 200.0;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -284,8 +296,11 @@ class _BudayaFormScreenState extends State<BudayaFormScreen> {
           onTap: _pickImage,
           borderRadius: BorderRadius.circular(12),
           child: Container(
-            height: 200,
+            height: imageHeight,
             width: double.infinity,
+            constraints: const BoxConstraints(
+              maxWidth: 600,
+            ),
             decoration: BoxDecoration(
               color: const Color(0xFFF5F5F0),
               borderRadius: BorderRadius.circular(12),
@@ -329,6 +344,15 @@ class _BudayaFormScreenState extends State<BudayaFormScreen> {
                   child: Image.network(
                     widget.budaya!.fotoUrl!,
                     fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) {
+                      return const Center(
+                        child: Icon(
+                          Icons.broken_image,
+                          size: 60,
+                          color: Color(0xFF8A998B),
+                        ),
+                      );
+                    },
                   ),
                 ),
                 Positioned(
@@ -345,31 +369,36 @@ class _BudayaFormScreenState extends State<BudayaFormScreen> {
                 ),
               ],
             )
-                : Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.add_photo_alternate,
-                  size: 60,
-                  color: const Color(0xFF8A998B),
-                ),
-                const SizedBox(height: 12),
-                const Text(
-                  'Tap untuk pilih foto',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Color(0xFF8A998B),
+                : Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.add_photo_alternate,
+                    size: constraints.maxWidth > 600 ? 70 : 60,
+                    color: const Color(0xFF8A998B),
                   ),
-                ),
-                const SizedBox(height: 4),
-                const Text(
-                  'Max 5MB (JPG, PNG, WebP)',
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: Color(0xFF8A998B),
+                  const SizedBox(height: 12),
+                  const Text(
+                    'Tap untuk pilih foto',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Color(0xFF8A998B),
+                    ),
+                    textAlign: TextAlign.center,
                   ),
-                ),
-              ],
+                  const SizedBox(height: 4),
+                  const Text(
+                    'Max 5MB (JPG, PNG, WebP)',
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: Color(0xFF8A998B),
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
             ),
           ),
         ),
@@ -397,13 +426,24 @@ class _BudayaFormScreenState extends State<BudayaFormScreen> {
           ),
         ),
         const SizedBox(height: 8),
-        TextFormField(
-          controller: controller,
-          maxLines: maxLines,
-          validator: validator,
-          decoration: InputDecoration(
-            hintText: hint,
-            prefixIcon: Icon(icon),
+        ConstrainedBox(
+          constraints: const BoxConstraints(
+            maxWidth: 600,
+          ),
+          child: TextFormField(
+            controller: controller,
+            maxLines: maxLines,
+            validator: validator,
+            decoration: InputDecoration(
+              hintText: hint,
+              hintStyle: const TextStyle(fontSize: 14),
+              prefixIcon: Icon(icon, size: 22),
+              contentPadding: EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: maxLines > 1 ? 16 : 14,
+              ),
+              isDense: true,
+            ),
           ),
         ),
       ],
@@ -423,24 +463,39 @@ class _BudayaFormScreenState extends State<BudayaFormScreen> {
           ),
         ),
         const SizedBox(height: 8),
-        DropdownButtonFormField<String>(
-          value: _selectedKategori,
-          decoration: const InputDecoration(
-            prefixIcon: Icon(Icons.category),
+        ConstrainedBox(
+          constraints: const BoxConstraints(
+            maxWidth: 600,
           ),
-          items: _kategoriList.map((kategori) {
-            return DropdownMenuItem(
-              value: kategori,
-              child: Text(kategori),
-            );
-          }).toList(),
-          onChanged: (value) {
-            if (value != null) {
-              setState(() {
-                _selectedKategori = value;
-              });
-            }
-          },
+          child: DropdownButtonFormField<String>(
+            value: _selectedKategori,
+            isExpanded: true,
+            decoration: const InputDecoration(
+              prefixIcon: Icon(Icons.category, size: 22),
+              contentPadding: EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 14,
+              ),
+              isDense: true,
+            ),
+            items: _kategoriList.map((kategori) {
+              return DropdownMenuItem(
+                value: kategori,
+                child: Text(
+                  kategori,
+                  style: const TextStyle(fontSize: 14),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              );
+            }).toList(),
+            onChanged: (value) {
+              if (value != null) {
+                setState(() {
+                  _selectedKategori = value;
+                });
+              }
+            },
+          ),
         ),
       ],
     );
