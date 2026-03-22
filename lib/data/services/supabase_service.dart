@@ -2,6 +2,7 @@
 
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'dart:io';
+import '../../core/config/supabase_config.dart';
 
 class SupabaseService {
   static SupabaseService? _instance;
@@ -184,12 +185,15 @@ class SupabaseService {
     }
   }
 
-  /// Get public URL dari file
+  /// Get public URL dari file — dibangun manual agar selalu pakai URL project yang benar
   String getPublicUrl({
     required String bucket,
     required String path,
   }) {
-    return _client.storage.from(bucket).getPublicUrl(path);
+    // Bangun URL secara manual dari SupabaseConfig, bukan dari SDK client
+    // Ini mencegah masalah caching URL yang salah
+    final base = SupabaseConfig.supabaseUrl.replaceAll(RegExp(r'/$'), '');
+    return '$base/storage/v1/object/public/$bucket/$path';
   }
 
   /// List files in storage folder

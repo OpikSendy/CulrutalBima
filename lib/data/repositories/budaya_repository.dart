@@ -117,6 +117,8 @@ class BudayaRepository {
         'deskripsi': deskripsi,
         'asal_daerah': asalDaerah,
         'foto_path': fotoPath,
+        // Simpan foto_url langsung saat insert agar tersimpan di database
+        'foto_url': fotoPath != null ? getFotoUrl(fotoPath) : null,
       };
 
       final response = await _supabaseService.insert(
@@ -165,6 +167,10 @@ class BudayaRepository {
         'deskripsi': deskripsi,
         'asal_daerah': asalDaerah,
         'foto_path': fotoPath,
+        // Selalu perbarui foto_url agar sinkron dengan foto_path
+        'foto_url': fotoPath != null && fotoPath.isNotEmpty
+            ? getFotoUrl(fotoPath)
+            : null,
       };
 
       final response = await _supabaseService.update(

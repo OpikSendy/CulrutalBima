@@ -91,6 +91,7 @@ class WisataRepository {
         'longitude': longitude,
         'alamat': alamat,
         'foto_path': fotoPath,
+        'foto_url': fotoPath != null ? getFotoUrl(fotoPath) : null,
       };
 
       final response = await _supabaseService.insert(
@@ -141,6 +142,9 @@ class WisataRepository {
         'longitude': longitude,
         'alamat': alamat,
         'foto_path': fotoPath,
+        'foto_url': fotoPath != null && fotoPath.isNotEmpty
+            ? getFotoUrl(fotoPath)
+            : null,
       };
 
       final response = await _supabaseService.update(
