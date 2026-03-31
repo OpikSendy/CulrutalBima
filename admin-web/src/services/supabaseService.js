@@ -12,6 +12,7 @@ import {
   TABLE_BUDAYA,
   TABLE_WISATA,
   TABLE_BUDAYA_MEDIA,
+  TABLE_WISATA_MEDIA,
 } from '../config/supabaseConfig'
 
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
@@ -354,6 +355,128 @@ export const mediaService = {
   async updateUrutan(id, urutan) {
     const { error } = await supabase
       .from(TABLE_BUDAYA_MEDIA)
+      .update({ urutan })
+      .eq('id', id)
+    if (error) throw error
+  },
+}
+
+// ============================================================
+// WISATA MEDIA SERVICE
+// ============================================================
+export const wisataMediaService = {
+
+  async getByWisataId(wisataId) {
+    const { data, error } = await supabase
+      .from(TABLE_WISATA_MEDIA)
+      .select('*')
+      .eq('wisata_id', wisataId)
+      .order('urutan', { ascending: true })
+      .order('created_at', { ascending: true })
+    if (error) throw error
+    return data
+  },
+
+  async addMedia({ wisataId, jenisMedia, urlMedia, storagePath, judul, urutan = 0 }) {
+    const { data, error } = await supabase
+      .from(TABLE_WISATA_MEDIA)
+      .insert({
+        wisata_id: wisataId,
+        jenis_media: jenisMedia,
+        url_media: urlMedia,
+        storage_path: storagePath,
+        judul: judul || null,
+        urutan,
+      })
+      .select()
+      .single()
+    if (error) throw error
+    return data
+  },
+
+  async deleteMedia(id, storagePath, jenisMedia) {
+    if (storagePath) {
+      const bucket = jenisMedia === 'video'
+        ? STORAGE_BUCKET_VIDEO
+        : jenisMedia === 'audio'
+          ? STORAGE_BUCKET_AUDIO
+          : STORAGE_BUCKET
+
+      const { error: storageError } = await supabase.storage
+        .from(bucket)
+        .remove([storagePath])
+      if (storageError) console.warn('Gagal hapus file storage:', storageError)
+    }
+
+    const { error } = await supabase
+      .from(TABLE_WISATA_MEDIA)
+      .delete()
+      .eq('id', id)
+    if (error) throw error
+  },
+
+  async deleteAllByWisataId(wisataId) {
+    const mediaList = await this.getByWisataId(wisataId)
+    for (const media of mediaList) {
+      await this.deleteMedia(media.id, media.storage_path, media.jenis_media)
+    }
+  },
+
+  async uploadGambar(file) {
+    validateFileSize(file, 5)
+    if (!file.type.startsWith('image/')) {
+      throw new Error('File harus berupa gambar (JPG, PNG, WebP)')
+    }
+    const filename = generateFilename(file.name)
+    const path = `${STORAGE_FOLDER_WISATA}/media/${filename}`
+
+    const { error } = await supabase.storage
+      .from(STORAGE_BUCKET)
+      .upload(path, file, { upsert: false })
+    if (error) throw error
+
+    const url = getPublicUrl(STORAGE_BUCKET, path)
+    return { path, url }
+  },
+
+  async uploadVideo(file) {
+    validateFileSize(file, 50)
+    if (file.type !== 'video/mp4') {
+      throw new Error('Format video harus MP4')
+    }
+    const filename = generateFilename(file.name)
+    const path = `wisata/${filename}`
+
+    const { error } = await supabase.storage
+      .from(STORAGE_BUCKET_VIDEO)
+      .upload(path, file, { upsert: false, contentType: 'video/mp4' })
+    if (error) throw error
+
+    const url = getPublicUrl(STORAGE_BUCKET_VIDEO, path)
+    return { path, url }
+  },
+
+  async uploadAudio(file) {
+    validateFileSize(file, 10)
+    const allowedTypes = ['audio/mpeg', 'audio/mp3']
+    if (!allowedTypes.includes(file.type)) {
+      throw new Error('Format audio harus MP3')
+    }
+    const filename = generateFilename(file.name)
+    const path = `wisata/${filename}`
+
+    const { error } = await supabase.storage
+      .from(STORAGE_BUCKET_AUDIO)
+      .upload(path, file, { upsert: false, contentType: 'audio/mpeg' })
+    if (error) throw error
+
+    const url = getPublicUrl(STORAGE_BUCKET_AUDIO, path)
+    return { path, url }
+  },
+
+  async updateUrutan(id, urutan) {
+    const { error } = await supabase
+      .from(TABLE_WISATA_MEDIA)
       .update({ urutan })
       .eq('id', id)
     if (error) throw error

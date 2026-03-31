@@ -493,8 +493,7 @@ class _BudayaDetailScreenState extends State<BudayaDetailScreen> {
             itemBuilder: (context, index) {
               final media = _mediaGambar[index];
               return GestureDetector(
-                onTap: () => _showImageFullscreen(media.urlMedia,
-                    media.judul ?? 'Foto ${index + 1}'),
+                onTap: () => _showGalleryViewer(index),
                 child: Container(
                   width: 160,
                   margin: const EdgeInsets.only(right: 12, bottom: 4),
@@ -534,7 +533,6 @@ class _BudayaDetailScreenState extends State<BudayaDetailScreen> {
                                 color: Color(0xFF8A998B)),
                           ),
                         ),
-                        // Overlay gradient + judul
                         if (media.judul != null)
                           Positioned(
                             bottom: 0, left: 0, right: 0,
@@ -562,7 +560,6 @@ class _BudayaDetailScreenState extends State<BudayaDetailScreen> {
                               ),
                             ),
                           ),
-                        // Icon expand
                         Positioned(
                           top: 8, right: 8,
                           child: Container(
@@ -575,6 +572,24 @@ class _BudayaDetailScreenState extends State<BudayaDetailScreen> {
                                 color: Colors.white, size: 14),
                           ),
                         ),
+                        // Badge jumlah foto jika ini foto pertama
+                        if (index == 0 && _mediaGambar.length > 1)
+                          Positioned(
+                            top: 8, left: 8,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 6, vertical: 3),
+                              decoration: BoxDecoration(
+                                color: Colors.black.withOpacity(0.55),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Text(
+                                '1 / ${_mediaGambar.length}',
+                                style: const TextStyle(
+                                    color: Colors.white, fontSize: 10),
+                              ),
+                            ),
+                          ),
                       ],
                     ),
                   ),
@@ -618,155 +633,92 @@ class _BudayaDetailScreenState extends State<BudayaDetailScreen> {
   }
 
   Widget _buildVideoCard(BudayaMedia video) {
-    final isActive = _activeVideoUrl == video.urlMedia;
-    final isInitializing = isActive && _videoInitializing;
-    final isPlaying = isActive &&
-        (_videoController?.value.isPlaying ?? false);
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
-        color: Colors.black,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.15),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(16),
-        child: Column(
-          children: [
-            // Video preview / player
-            AspectRatio(
-              aspectRatio: isActive &&
-                      (_videoController?.value.isInitialized ?? false)
-                  ? _videoController!.value.aspectRatio
-                  : 16 / 9,
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  // Video player atau thumbnail placeholder
-                  if (isActive &&
-                      (_videoController?.value.isInitialized ?? false))
-                    VideoPlayer(_videoController!)
-                  else
-                    Container(
-                      color: const Color(0xFF1A1A2E),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.play_circle_outline,
-                            size: 52,
-                            color: Colors.white.withOpacity(0.7),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            video.judul ?? 'Video',
-                            style: TextStyle(
-                              color: Colors.white.withOpacity(0.8),
-                              fontSize: 13,
-                            ),
-                          ),
+    return GestureDetector(
+      onTap: () => _showVideoPopup(video),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        decoration: BoxDecoration(
+          color: const Color(0xFF1A1A2E),
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.15),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(16),
+          child: AspectRatio(
+            aspectRatio: 16 / 9,
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                // Dark background
+                Container(color: const Color(0xFF0D1117)),
+                // Play icon
+                Center(
+                  child: Container(
+                    width: 64,
+                    height: 64,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF4A7C59).withOpacity(0.9),
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF4A7C59).withOpacity(0.4),
+                          blurRadius: 20,
+                          spreadRadius: 4,
+                        ),
+                      ],
+                    ),
+                    child: const Icon(Icons.play_arrow_rounded,
+                        color: Colors.white, size: 36),
+                  ),
+                ),
+                // Label bar
+                Positioned(
+                  bottom: 0, left: 0, right: 0,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 14, vertical: 10),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          Colors.transparent,
+                          Colors.black.withOpacity(0.7),
                         ],
                       ),
                     ),
-
-                  // Loading indicator
-                  if (isInitializing)
-                    Container(
-                      color: Colors.black45,
-                      child: const Center(
-                        child: CircularProgressIndicator(
-                            color: Colors.white),
-                      ),
-                    ),
-
-                  // Play/pause overlay
-                  GestureDetector(
-                    onTap: () => _playVideo(video.urlMedia),
-                    child: Container(
-                      color: Colors.transparent,
-                      child: isActive &&
-                              (_videoController?.value.isInitialized ?? false) &&
-                              !isPlaying
-                          ? Center(
-                              child: Container(
-                                padding: const EdgeInsets.all(12),
-                                decoration: BoxDecoration(
-                                  color: Colors.black.withOpacity(0.5),
-                                  shape: BoxShape.circle,
-                                ),
-                                child: const Icon(Icons.play_arrow,
-                                    color: Colors.white, size: 32),
-                              ),
-                            )
-                          : null,
+                    child: Row(
+                      children: [
+                        const Icon(Icons.videocam_rounded,
+                            color: Colors.white70, size: 14),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Text(
+                            video.judul ?? 'Video',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        const Icon(Icons.open_in_full_rounded,
+                            color: Colors.white54, size: 14),
+                      ],
                     ),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
-
-            // Control bar
-            if (isActive &&
-                (_videoController?.value.isInitialized ?? false))
-              Container(
-                color: const Color(0xFF1A1A2E),
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 12, vertical: 8),
-                child: Row(
-                  children: [
-                    GestureDetector(
-                      onTap: () => _playVideo(video.urlMedia),
-                      child: Icon(
-                        isPlaying ? Icons.pause : Icons.play_arrow,
-                        color: Colors.white,
-                        size: 24,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: VideoProgressIndicator(
-                        _videoController!,
-                        allowScrubbing: true,
-                        colors: const VideoProgressColors(
-                          playedColor: Color(0xFF4A7C59),
-                          bufferedColor: Colors.white24,
-                          backgroundColor: Colors.white12,
-                        ),
-                        padding: const EdgeInsets.symmetric(vertical: 8),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      _formatDuration(
-                          _videoController!.value.position),
-                      style: const TextStyle(
-                          color: Colors.white60, fontSize: 11),
-                    ),
-                  ],
-                ),
-              ),
-
-            // Label judul
-            if (video.judul != null && !isActive)
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 12, vertical: 8),
-                color: const Color(0xFF1A1A2E),
-                child: Text(
-                  video.judul!,
-                  style: const TextStyle(
-                      color: Colors.white70, fontSize: 12),
-                ),
-              ),
-          ],
+          ),
         ),
       ),
     );
@@ -802,165 +754,422 @@ class _BudayaDetailScreenState extends State<BudayaDetailScreen> {
   }
 
   Widget _buildAudioCard(BudayaMedia audio) {
-    final isActive = _activeAudioId == audio.id;
-    final isPlaying = isActive && _audioState == PlayerState.playing;
-    final totalMs = _audioDuration.inMilliseconds.toDouble();
-    final currentMs = isActive
-        ? _audioPosition.inMilliseconds.toDouble().clamp(0.0,
-            totalMs > 0 ? totalMs : 1.0)
-        : 0.0;
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: isActive
-            ? const Color(0xFF4A7C59).withOpacity(0.08)
-            : Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: isActive
-              ? const Color(0xFF4A7C59).withOpacity(0.4)
-              : const Color(0xFF4A7C59).withOpacity(0.15),
-          width: isActive ? 1.5 : 1,
+    return GestureDetector(
+      onTap: () => _showAudioPopup(audio),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 10),
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: const Color(0xFF4A7C59).withOpacity(0.2)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.04),
+              blurRadius: 6,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          // Play/pause button
-          GestureDetector(
-            onTap: () => _toggleAudio(audio),
-            child: Container(
-              width: 44,
-              height: 44,
+        child: Row(
+          children: [
+            Container(
+              width: 48, height: 48,
               decoration: BoxDecoration(
-                color: const Color(0xFF4A7C59),
+                gradient: const LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [Color(0xFF4A7C59), Color(0xFF2C5F3D)],
+                ),
                 shape: BoxShape.circle,
                 boxShadow: [
                   BoxShadow(
                     color: const Color(0xFF4A7C59).withOpacity(0.3),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
+                    blurRadius: 8, offset: const Offset(0, 3),
                   ),
                 ],
               ),
-              child: Icon(
-                isPlaying ? Icons.pause : Icons.play_arrow,
-                color: Colors.white,
-                size: 22,
+              child: const Icon(Icons.headphones_rounded,
+                  color: Colors.white, size: 22),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    audio.judul ?? 'Audio Tradisional',
+                    style: const TextStyle(
+                      fontSize: 13, fontWeight: FontWeight.w600,
+                      color: Color(0xFF2C3E2D),
+                    ),
+                    maxLines: 1, overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 4),
+                  const Text('Ketuk untuk memutar',
+                      style: TextStyle(fontSize: 11, color: Color(0xFF8A998B))),
+                ],
               ),
             ),
-          ),
-          const SizedBox(width: 12),
-
-          // Info + progress
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  audio.judul ?? 'Audio Tradisional',
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: isActive
-                        ? const Color(0xFF2C3E2D)
-                        : const Color(0xFF5A6C5B),
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 6),
-
-                // Slider progress
-                SliderTheme(
-                  data: SliderTheme.of(context).copyWith(
-                    trackHeight: 3,
-                    thumbSize: isActive
-                        ? const WidgetStatePropertyAll(Size(12, 12))
-                        : const WidgetStatePropertyAll(Size(0, 0)),
-                    // overlayColor: WidgetStatePropertyAll(
-                    //     const Color(0xFF4A7C59).withOpacity(0.2)),
-                    activeTrackColor: const Color(0xFF4A7C59),
-                    inactiveTrackColor:
-                        const Color(0xFF4A7C59).withOpacity(0.15),
-                    thumbColor: const Color(0xFF4A7C59),
-                  ),
-                  child: Slider(
-                    min: 0,
-                    max: totalMs > 0 ? totalMs : 1.0,
-                    value: currentMs,
-                    onChanged: isActive ? _seekAudio : null,
-                  ),
-                ),
-
-                // Durasi
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      isActive
-                          ? _formatDuration(_audioPosition)
-                          : '0:00',
-                      style: const TextStyle(
-                          fontSize: 10, color: Color(0xFF8A998B)),
-                    ),
-                    Text(
-                      isActive && _audioDuration != Duration.zero
-                          ? _formatDuration(_audioDuration)
-                          : '--:--',
-                      style: const TextStyle(
-                          fontSize: 10, color: Color(0xFF8A998B)),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ─── Fullscreen image viewer ─────────────────────────────────────
-  void _showImageFullscreen(String url, String title) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => Scaffold(
-          backgroundColor: Colors.black,
-          appBar: AppBar(
-            backgroundColor: Colors.black,
-            foregroundColor: Colors.white,
-            title: Text(title,
-                style: const TextStyle(fontSize: 14, color: Colors.white)),
-            elevation: 0,
-          ),
-          body: Center(
-            child: InteractiveViewer(
-              child: Image.network(
-                url,
-                fit: BoxFit.contain,
-                loadingBuilder: (_, child, progress) {
-                  if (progress == null) return child;
-                  return const Center(
-                    child: CircularProgressIndicator(color: Colors.white),
-                  );
-                },
+            Container(
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                color: const Color(0xFF4A7C59).withOpacity(0.08),
+                shape: BoxShape.circle,
               ),
+              child: const Icon(Icons.arrow_forward_ios_rounded,
+                  color: Color(0xFF4A7C59), size: 12),
             ),
-          ),
+          ],
         ),
       ),
     );
   }
+
+
+  // ─── Gallery Viewer — PageView swipeable ─────────────────────────
+  void _showGalleryViewer(int initialIndex) {
+    final pageCtrl = PageController(initialPage: initialIndex);
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        fullscreenDialog: true,
+        builder: (_) {
+          int cur = initialIndex;
+          return StatefulBuilder(builder: (ctx, ss) => Scaffold(
+            backgroundColor: Colors.black,
+            extendBodyBehindAppBar: true,
+            appBar: AppBar(
+              backgroundColor: Colors.transparent,
+              foregroundColor: Colors.white,
+              elevation: 0,
+              leading: IconButton(
+                icon: Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                      color: Colors.black45, shape: BoxShape.circle),
+                  child: const Icon(Icons.close, color: Colors.white, size: 18),
+                ),
+                onPressed: () => Navigator.pop(ctx),
+              ),
+              title: Text(
+                '${cur + 1} / ${_mediaGambar.length}',
+                style: const TextStyle(fontSize: 14),
+              ),
+              centerTitle: true,
+            ),
+            body: PageView.builder(
+              controller: pageCtrl,
+              itemCount: _mediaGambar.length,
+              onPageChanged: (i) => ss(() => cur = i),
+              itemBuilder: (_, i) {
+                final img = _mediaGambar[i];
+                return Stack(alignment: Alignment.bottomCenter, children: [
+                  Center(
+                    child: InteractiveViewer(
+                      minScale: 0.8,
+                      maxScale: 5.0,
+                      child: Image.network(
+                        img.urlMedia,
+                        fit: BoxFit.contain,
+                        loadingBuilder: (_, child, p) {
+                          if (p == null) return child;
+                          return const Center(child: CircularProgressIndicator(
+                              color: Color(0xFF4A7C59)));
+                        },
+                        errorBuilder: (_, __, ___) => const Icon(
+                            Icons.broken_image, color: Colors.white38, size: 64),
+                      ),
+                    ),
+                  ),
+                  if (img.judul != null)
+                    Positioned(
+                      bottom: 40,
+                      child: Container(
+                        margin: const EdgeInsets.symmetric(horizontal: 24),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 10),
+                        decoration: BoxDecoration(
+                          color: Colors.black54,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(img.judul!,
+                            style: const TextStyle(color: Colors.white, fontSize: 13),
+                            textAlign: TextAlign.center),
+                      ),
+                    ),
+                ]);
+              },
+            ),
+          ));
+        },
+      ),
+    );
+  }
+
+  // ─── Video Pop-up Bottom Sheet ────────────────────────────────────
+  void _showVideoPopup(BudayaMedia video) {
+    VideoPlayerController? popupVc;
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        return StatefulBuilder(builder: (ctx, ss) {
+          if (popupVc == null) {
+            popupVc = VideoPlayerController.networkUrl(
+                Uri.parse(video.urlMedia));
+            popupVc!.initialize().then((_) {
+              popupVc!.play();
+              popupVc!.addListener(() { if (ctx.mounted) ss(() {}); });
+              ss(() {});
+            });
+          }
+          final initialized = popupVc!.value.isInitialized;
+          final playing = popupVc!.value.isPlaying;
+          return Container(
+            height: MediaQuery.of(ctx).size.height * 0.72,
+            decoration: const BoxDecoration(
+              color: Color(0xFF0D1117),
+              borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+            ),
+            child: Column(children: [
+              Container(
+                margin: const EdgeInsets.only(top: 12, bottom: 4),
+                width: 40, height: 4,
+                decoration: BoxDecoration(
+                    color: Colors.white24,
+                    borderRadius: BorderRadius.circular(2)),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 8, 8, 8),
+                child: Row(children: [
+                  const Icon(Icons.videocam_rounded,
+                      color: Color(0xFF4A7C59), size: 18),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(video.judul ?? 'Video',
+                        style: const TextStyle(color: Colors.white,
+                            fontSize: 15, fontWeight: FontWeight.w700)),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close, color: Colors.white54),
+                    onPressed: () {
+                      popupVc?.dispose();
+                      Navigator.pop(ctx);
+                    },
+                  ),
+                ]),
+              ),
+              Expanded(
+                child: !initialized
+                    ? const Center(child: CircularProgressIndicator(
+                        color: Color(0xFF4A7C59)))
+                    : GestureDetector(
+                        onTap: () => playing
+                            ? popupVc!.pause()
+                            : popupVc!.play(),
+                        child: Stack(alignment: Alignment.center, children: [
+                          AspectRatio(
+                            aspectRatio: popupVc!.value.aspectRatio,
+                            child: VideoPlayer(popupVc!),
+                          ),
+                          if (!playing)
+                            Container(
+                              width: 64, height: 64,
+                              decoration: BoxDecoration(
+                                  color: Colors.black45,
+                                  shape: BoxShape.circle),
+                              child: const Icon(Icons.play_arrow_rounded,
+                                  color: Colors.white, size: 36),
+                            ),
+                        ]),
+                      ),
+              ),
+              if (initialized)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 32),
+                  child: Column(children: [
+                    VideoProgressIndicator(
+                      popupVc!,
+                      allowScrubbing: true,
+                      colors: const VideoProgressColors(
+                        playedColor: Color(0xFF4A7C59),
+                        bufferedColor: Colors.white24,
+                        backgroundColor: Colors.white12,
+                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                    ),
+                    Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                      IconButton(
+                        icon: const Icon(Icons.replay_10, color: Colors.white70),
+                        onPressed: () => popupVc!.seekTo(
+                            popupVc!.value.position - const Duration(seconds: 10)),
+                      ),
+                      const SizedBox(width: 8),
+                      Container(
+                        width: 52, height: 52,
+                        decoration: const BoxDecoration(
+                            color: Color(0xFF4A7C59), shape: BoxShape.circle),
+                        child: IconButton(
+                          icon: Icon(playing
+                              ? Icons.pause_rounded
+                              : Icons.play_arrow_rounded,
+                              color: Colors.white, size: 28),
+                          onPressed: () =>
+                              playing ? popupVc!.pause() : popupVc!.play(),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      IconButton(
+                        icon: const Icon(Icons.forward_10, color: Colors.white70),
+                        onPressed: () => popupVc!.seekTo(
+                            popupVc!.value.position + const Duration(seconds: 10)),
+                      ),
+                    ]),
+                  ]),
+                ),
+            ]),
+          );
+        });
+      },
+    ).whenComplete(() => popupVc?.dispose());
+  }
+
+  // ─── Audio Pop-up Bottom Sheet premium ───────────────────────────
+  void _showAudioPopup(BudayaMedia audio) {
+    _toggleAudio(audio);
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (ctx) => StatefulBuilder(builder: (ctx, ss) {
+        _audioPlayer.onPlayerStateChanged.listen((_) { if (ctx.mounted) ss(() {}); });
+        _audioPlayer.onPositionChanged.listen((_) { if (ctx.mounted) ss(() {}); });
+        _audioPlayer.onDurationChanged.listen((_) { if (ctx.mounted) ss(() {}); });
+
+        final isActive = _activeAudioId == audio.id;
+        final isPlaying = isActive && _audioState == PlayerState.playing;
+        final totalMs = _audioDuration.inMilliseconds.toDouble();
+        final currMs = isActive
+            ? _audioPosition.inMilliseconds.toDouble().clamp(
+                0.0, totalMs > 0 ? totalMs : 1.0)
+            : 0.0;
+
+        return Container(
+          padding: const EdgeInsets.fromLTRB(24, 16, 24, 40),
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft, end: Alignment.bottomRight,
+              colors: [Color(0xFF1E3A27), Color(0xFF0F1E15)],
+            ),
+            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+          ),
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            Container(
+              width: 40, height: 4,
+              margin: const EdgeInsets.only(bottom: 24),
+              decoration: BoxDecoration(
+                  color: Colors.white24, borderRadius: BorderRadius.circular(2)),
+            ),
+            Container(
+              width: 100, height: 100,
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  begin: Alignment.topLeft, end: Alignment.bottomRight,
+                  colors: [Color(0xFF4A7C59), Color(0xFF2C5F3D)],
+                ),
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [BoxShadow(
+                  color: const Color(0xFF4A7C59).withOpacity(0.45),
+                  blurRadius: 28, spreadRadius: 4,
+                )],
+              ),
+              child: const Icon(Icons.music_note_rounded,
+                  color: Colors.white, size: 48),
+            ),
+            const SizedBox(height: 22),
+            Text(audio.judul ?? 'Audio Tradisional',
+                style: const TextStyle(color: Colors.white, fontSize: 20,
+                    fontWeight: FontWeight.w800),
+                textAlign: TextAlign.center),
+            const SizedBox(height: 4),
+            const Text('Musik Tradisional Bima',
+                style: TextStyle(color: Colors.white54, fontSize: 13)),
+            const SizedBox(height: 28),
+            SliderTheme(
+              data: SliderTheme.of(context).copyWith(
+                trackHeight: 5,
+                activeTrackColor: const Color(0xFF4A7C59),
+                inactiveTrackColor: Colors.white12,
+                thumbColor: Colors.white,
+                thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 7),
+                overlayColor: const Color(0xFF4A7C59).withOpacity(0.2),
+              ),
+              child: Slider(
+                min: 0, max: totalMs > 0 ? totalMs : 1.0, value: currMs,
+                onChanged: isActive ? _seekAudio : null,
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    isActive ? _formatDuration(_audioPosition) : '0:00',
+                    style: const TextStyle(color: Colors.white54, fontSize: 12),
+                  ),
+                  Text(
+                    isActive && _audioDuration != Duration.zero
+                        ? _formatDuration(_audioDuration)
+                        : '--:--',
+                    style: const TextStyle(color: Colors.white54, fontSize: 12),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 20),
+            Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+              IconButton(
+                iconSize: 32,
+                icon: const Icon(Icons.replay_15, color: Colors.white70),
+                onPressed: () => _audioPlayer.seek(
+                    _audioPosition - const Duration(seconds: 15)),
+              ),
+              const SizedBox(width: 16),
+              GestureDetector(
+                onTap: () => _toggleAudio(audio),
+                child: Container(
+                  width: 68, height: 68,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF4A7C59),
+                    shape: BoxShape.circle,
+                    boxShadow: [BoxShadow(
+                      color: const Color(0xFF4A7C59).withOpacity(0.5),
+                      blurRadius: 22, spreadRadius: 4,
+                    )],
+                  ),
+                  child: Icon(
+                    isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
+                    color: Colors.white, size: 36,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 16),
+              IconButton(
+                iconSize: 32,
+                icon: const Icon(Icons.forward_15, color: Colors.white70),
+                onPressed: () => _audioPlayer.seek(
+                    _audioPosition + const Duration(seconds: 15)),
+              ),
+            ]),
+          ]),
+        );
+      }),
+    );
+  }
+
 
   // ─── Info Card ───────────────────────────────────────────────────
   Widget _buildInfoCard() {

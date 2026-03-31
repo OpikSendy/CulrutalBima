@@ -172,6 +172,87 @@
             </div>
             <input ref="fileInput" type="file" accept="image/*" style="display:none" @change="onFileChange" />
           </div>
+
+          <!-- ─── MULTIMEDIA SECTION ─── -->
+          <div class="media-section">
+            <div v-if="!editItem" class="media-add-note">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+              💡 Multimedia (foto, video, audio) dapat ditambahkan setelah data disimpan melalui menu <strong>Edit</strong>.
+            </div>
+
+            <template v-else>
+              <div class="media-section-header">
+                <div class="media-section-title">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                  Multimedia
+                  <span class="media-count-badge" v-if="mediaList.length > 0">{{ mediaList.length }}</span>
+                </div>
+              </div>
+
+              <div class="media-tabs">
+                <button v-for="tab in mediaTabs" :key="tab.key" class="media-tab-btn" :class="{ active: activeMediaTab === tab.key }" @click="activeMediaTab = tab.key">
+                  {{ tab.icon }} {{ tab.label }}
+                  <span class="tab-count" v-if="mediaCountByTab(tab.key) > 0">{{ mediaCountByTab(tab.key) }}</span>
+                </button>
+              </div>
+
+              <div class="media-upload-area">
+                <div class="form-group" style="margin-bottom:8px">
+                  <label class="form-label" style="font-size:12px">Judul media (opsional)</label>
+                  <input v-model="mediaJudul" class="form-input" style="font-size:13px" placeholder="Contoh: Pantai saat sunset..." />
+                </div>
+                <div v-if="activeMediaTab === 'gambar'" class="upload-zone upload-zone-sm" @click="$refs.mediaFileInput.click()" @dragover.prevent @drop.prevent="onMediaFileDrop">
+                  <div class="upload-zone-icon" style="font-size:24px">🖼️</div>
+                  <div class="upload-zone-text"><strong>Klik untuk upload foto</strong> atau drag &amp; drop<br><span>JPG, PNG maks. 5MB</span></div>
+                </div>
+                <div v-if="activeMediaTab === 'video'" class="upload-zone upload-zone-sm" @click="$refs.mediaFileInput.click()">
+                  <div class="upload-zone-icon" style="font-size:24px">🎬</div>
+                  <div class="upload-zone-text"><strong>Klik untuk upload video</strong><br><span>Format MP4, maks. 50MB</span></div>
+                </div>
+                <div v-if="activeMediaTab === 'audio'" class="upload-zone upload-zone-sm" @click="$refs.mediaFileInput.click()">
+                  <div class="upload-zone-icon" style="font-size:24px">🎵</div>
+                  <div class="upload-zone-text"><strong>Klik untuk upload audio</strong><br><span>Format MP3, maks. 10MB</span></div>
+                </div>
+                <input ref="mediaFileInput" type="file" style="display:none" :accept="mediaAccept" @change="onMediaFileChange" />
+                <div v-if="mediaUploading" class="upload-progress-wrap">
+                  <div class="upload-progress-label"><span>Mengupload...</span><span>{{ uploadProgress }}%</span></div>
+                  <div class="upload-progress-bar"><div class="upload-progress-fill" :style="{ width: uploadProgress + '%' }"></div></div>
+                </div>
+              </div>
+
+              <div v-if="mediaLoading" class="media-loading"><div class="spinner spinner-sm"></div><span>Memuat media...</span></div>
+              <div v-else-if="filteredMediaList.length === 0" class="media-empty">
+                <span>{{ activeMediaTab === 'gambar' ? '🖼️' : activeMediaTab === 'video' ? '🎬' : '🎵' }}</span>
+                <p>Belum ada {{ activeMediaTab === 'gambar' ? 'foto' : activeMediaTab === 'video' ? 'video' : 'audio' }} untuk wisata ini.</p>
+              </div>
+              <div v-else class="media-list">
+                <div v-for="item in filteredMediaList" :key="item.id" class="media-item">
+                  <template v-if="item.jenis_media === 'gambar'">
+                    <div class="media-item-thumb"><img :src="item.url_media" :alt="item.judul || 'Foto'" /></div>
+                  </template>
+                  <template v-else-if="item.jenis_media === 'video'">
+                    <div class="media-item-thumb media-item-thumb-icon"><span>🎬</span></div>
+                  </template>
+                  <template v-else-if="item.jenis_media === 'audio'">
+                    <div class="media-item-thumb media-item-thumb-icon"><span>🎵</span></div>
+                  </template>
+                  <div class="media-item-info">
+                    <div class="media-item-title">{{ item.judul || (item.jenis_media === 'gambar' ? 'Foto' : item.jenis_media === 'video' ? 'Video' : 'Audio') }}</div>
+                    <div class="media-item-meta">
+                      <span class="badge" :class="mediaBadgeClass(item.jenis_media)">{{ item.jenis_media }}</span>
+                      <span class="media-item-date">{{ formatDate(item.created_at) }}</span>
+                    </div>
+                    <audio v-if="item.jenis_media === 'audio'" :src="item.url_media" controls class="media-audio-player" preload="none"></audio>
+                    <a v-if="item.jenis_media === 'video'" :href="item.url_media" target="_blank" rel="noopener noreferrer" class="media-video-link">Buka video ↗</a>
+                  </div>
+                  <button class="btn btn-danger-ghost btn-icon" :disabled="deletingMediaId === item.id" @click="confirmDeleteMedia(item)" title="Hapus media">
+                    <div v-if="deletingMediaId === item.id" class="spinner spinner-sm"></div>
+                    <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+                  </button>
+                </div>
+              </div>
+            </template>
+          </div>
         </div>
         <div class="modal-footer">
           <button class="btn btn-secondary" @click="closeModal">Batal</button>
@@ -179,6 +260,23 @@
             <div v-if="saving" class="spinner spinner-sm"></div>
             {{ saving ? 'Menyimpan...' : 'Simpan' }}
           </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Confirm Delete Media -->
+    <div class="modal-overlay" v-if="showConfirmMedia" @click.self="showConfirmMedia=false">
+      <div class="modal modal-sm">
+        <div class="modal-body" style="padding-top:28px">
+          <div class="confirm-icon" style="background:rgba(214,125,92,0.1)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#d67d5c" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
+          </div>
+          <div class="confirm-title">Hapus Media?</div>
+          <div class="confirm-desc">"<strong>{{ deleteMediaTarget?.judul || 'Media ini' }}</strong>" akan dihapus permanen dari storage.</div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" @click="showConfirmMedia=false">Batal</button>
+          <button class="btn btn-danger" @click="doDeleteMedia">Hapus</button>
         </div>
       </div>
     </div>
@@ -218,10 +316,10 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import DataTable from '../components/DataTable.vue'
 import PhotoViewer from '../components/PhotoViewer.vue'
-import { wisataService } from '../services/supabaseService.js'
+import { wisataService, wisataMediaService } from '../services/supabaseService.js'
 import { BIMA_BOUNDS } from '../config/supabaseConfig.js'
 
 const allData = ref([])
@@ -246,6 +344,24 @@ const latError = ref('')
 const lngError = ref('')
 
 const form = ref({ nama:'', deskripsi:'', latitude:null, longitude:null, alamat:'' })
+
+// ─── Multimedia state ─────────────────────────────────────────────
+const mediaList        = ref([])
+const mediaLoading     = ref(false)
+const mediaUploading   = ref(false)
+const uploadProgress   = ref(0)
+const activeMediaTab   = ref('gambar')
+const mediaJudul       = ref('')
+const deletingMediaId  = ref(null)
+const showConfirmMedia = ref(false)
+const deleteMediaTarget = ref(null)
+const mediaFileInput   = ref(null)
+
+const mediaTabs = [
+  { key: 'gambar', label: 'Foto',  icon: '🖼️' },
+  { key: 'video',  label: 'Video', icon: '🎬' },
+  { key: 'audio',  label: 'Audio', icon: '🎵' },
+]
 
 // Mini map URL
 const mapPreviewUrl = computed(() => {
@@ -273,6 +389,27 @@ const filteredData = computed(() => {
     })
   }
   return list
+})
+
+const filteredMediaList = computed(() =>
+  mediaList.value.filter(m => m.jenis_media === activeMediaTab.value)
+)
+
+const mediaAccept = computed(() => {
+  if (activeMediaTab.value === 'gambar') return 'image/jpeg,image/png,image/webp'
+  if (activeMediaTab.value === 'video')  return 'video/mp4'
+  return 'audio/mpeg,audio/mp3'
+})
+
+// Watch: fetch media ketika modal edit terbuka
+watch([showModal, editItem], ([isOpen, item]) => {
+  if (isOpen && item) {
+    fetchMedia(item.id)
+  } else {
+    mediaList.value = []
+    mediaJudul.value = ''
+    activeMediaTab.value = 'gambar'
+  }
 })
 
 const bounds = BIMA_BOUNDS || { latMin:-9.0, latMax:-8.0, lngMin:118.0, lngMax:119.5 }
@@ -337,7 +474,7 @@ function openEdit(w) {
   fotoPreview.value = w.foto_url||null; fotoFile.value = null; latError.value=''; lngError.value=''
   showModal.value = true
 }
-function closeModal() { showModal.value = false }
+function closeModal() { showModal.value = false; editItem.value = null }
 
 async function saveItem() {
   if (!form.value.nama) { toast('Nama wajib diisi', 'error'); return }
@@ -367,11 +504,107 @@ function confirmDelete(w) { deleteTarget.value=w; showConfirm.value=true }
 async function doDelete() {
   saving.value = true
   try {
+    // Hapus semua media terlebih dahulu
+    try { await wisataMediaService.deleteAllByWisataId(deleteTarget.value.id) } catch(_) {}
     if (deleteTarget.value.foto_path) await wisataService.deleteFoto(deleteTarget.value.foto_path)
     await wisataService.delete(deleteTarget.value.id)
     toast('Berhasil dihapus','success'); showConfirm.value=false; await loadData()
   } catch (e) { toast('Gagal menghapus','error') }
   finally { saving.value = false }
+}
+
+// ─── MULTIMEDIA FUNCTIONS ─────────────────────────────────────────
+async function fetchMedia(wisataId) {
+  mediaLoading.value = true
+  try {
+    mediaList.value = await wisataMediaService.getByWisataId(wisataId)
+  } catch(e) {
+    toast('Gagal memuat media: ' + e.message, 'error')
+  } finally {
+    mediaLoading.value = false
+  }
+}
+
+function mediaCountByTab(tabKey) {
+  return mediaList.value.filter(m => m.jenis_media === tabKey).length
+}
+
+function mediaBadgeClass(jenisMedia) {
+  if (jenisMedia === 'gambar') return 'badge-green'
+  if (jenisMedia === 'video')  return 'badge-blue'
+  return 'badge-purple'
+}
+
+function onMediaFileChange(e) {
+  const file = e.target.files[0]
+  if (file) uploadMedia(file)
+  e.target.value = ''
+}
+
+function onMediaFileDrop(e) {
+  const file = e.dataTransfer.files[0]
+  if (file) uploadMedia(file)
+}
+
+async function uploadMedia(file) {
+  if (!editItem.value) return
+  mediaUploading.value = true
+  uploadProgress.value = 10
+  try {
+    let result
+    const tab = activeMediaTab.value
+    const progressTimer = setInterval(() => {
+      if (uploadProgress.value < 85) uploadProgress.value += 10
+    }, 300)
+    if (tab === 'gambar') {
+      result = await wisataMediaService.uploadGambar(file)
+    } else if (tab === 'video') {
+      result = await wisataMediaService.uploadVideo(file)
+    } else {
+      result = await wisataMediaService.uploadAudio(file)
+    }
+    clearInterval(progressTimer)
+    uploadProgress.value = 95
+    const urutan = mediaList.value.filter(m => m.jenis_media === tab).length
+    await wisataMediaService.addMedia({
+      wisataId: editItem.value.id,
+      jenisMedia: tab,
+      urlMedia: result.url,
+      storagePath: result.path,
+      judul: mediaJudul.value.trim() || null,
+      urutan,
+    })
+    uploadProgress.value = 100
+    mediaJudul.value = ''
+    toast('Media berhasil diupload', 'success')
+    await fetchMedia(editItem.value.id)
+  } catch(e) {
+    toast('Gagal upload: ' + e.message, 'error')
+  } finally {
+    setTimeout(() => { mediaUploading.value = false; uploadProgress.value = 0 }, 600)
+  }
+}
+
+function confirmDeleteMedia(item) {
+  deleteMediaTarget.value = item
+  showConfirmMedia.value = true
+}
+
+async function doDeleteMedia() {
+  if (!deleteMediaTarget.value) return
+  const item = deleteMediaTarget.value
+  deletingMediaId.value = item.id
+  showConfirmMedia.value = false
+  try {
+    await wisataMediaService.deleteMedia(item.id, item.storage_path, item.jenis_media)
+    toast('Media berhasil dihapus', 'success')
+    await fetchMedia(editItem.value.id)
+  } catch(e) {
+    toast('Gagal hapus media: ' + e.message, 'error')
+  } finally {
+    deletingMediaId.value = null
+    deleteMediaTarget.value = null
+  }
 }
 
 function onFileChange(e) { handleFile(e.target.files[0]) }
@@ -387,3 +620,44 @@ function toast(message, type='success') {
 
 onMounted(loadData)
 </script>
+
+<style scoped>
+.modal-wide { max-width: 760px; width: 95vw; }
+.media-section { margin-top: 24px; border-top: 1px solid rgba(139,111,71,0.15); padding-top: 20px; }
+.media-add-note { display:flex; align-items:flex-start; gap:10px; background:rgba(139,111,71,0.06); border:1px solid rgba(139,111,71,0.2); border-radius:10px; padding:14px 16px; font-size:13px; color:#6b5a3e; line-height:1.5; }
+.media-add-note svg { width:16px; height:16px; flex-shrink:0; margin-top:2px; stroke:#8b6f47; }
+.media-section-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }
+.media-section-title { display:flex; align-items:center; gap:8px; font-size:14px; font-weight:700; color:#2c3e2d; }
+.media-section-title svg { width:16px; height:16px; stroke:#8b6f47; }
+.media-count-badge { background:#8b6f47; color:#fff; font-size:11px; font-weight:700; border-radius:20px; padding:1px 7px; min-width:20px; text-align:center; }
+.media-tabs { display:flex; gap:6px; margin-bottom:14px; background:rgba(139,111,71,0.06); border-radius:10px; padding:4px; }
+.media-tab-btn { flex:1; display:flex; align-items:center; justify-content:center; gap:6px; padding:8px 10px; border:none; border-radius:7px; background:transparent; color:#6b5a3e; font-size:13px; font-weight:500; cursor:pointer; transition:all 0.2s; }
+.media-tab-btn.active { background:#fff; color:#2c3e2d; font-weight:700; box-shadow:0 1px 4px rgba(0,0,0,0.08); }
+.tab-count { background:#8b6f47; color:#fff; font-size:10px; font-weight:700; border-radius:20px; padding:1px 5px; }
+.upload-zone-sm { padding:16px 20px !important; }
+.upload-zone-sm .upload-zone-icon { font-size:24px; margin-bottom:6px; }
+.upload-progress-wrap { margin-top:10px; }
+.upload-progress-label { display:flex; justify-content:space-between; font-size:12px; color:#6b5a3e; margin-bottom:4px; }
+.upload-progress-bar { height:6px; background:rgba(139,111,71,0.15); border-radius:3px; overflow:hidden; }
+.upload-progress-fill { height:100%; background:#8b6f47; border-radius:3px; transition:width 0.3s; }
+.media-loading { display:flex; align-items:center; gap:10px; padding:16px; color:#8a998b; font-size:13px; }
+.media-empty { text-align:center; padding:24px; color:#8a998b; }
+.media-empty span { font-size:32px; display:block; margin-bottom:8px; }
+.media-empty p { font-size:13px; }
+.media-upload-area { margin-bottom:16px; }
+.media-list { display:flex; flex-direction:column; gap:8px; }
+.media-item { display:flex; align-items:center; gap:12px; padding:10px 12px; border:1px solid rgba(139,111,71,0.15); border-radius:10px; background:#faf8f3; }
+.media-item-thumb { width:52px; height:52px; border-radius:8px; overflow:hidden; flex-shrink:0; background:rgba(139,111,71,0.1); display:flex; align-items:center; justify-content:center; }
+.media-item-thumb img { width:100%; height:100%; object-fit:cover; }
+.media-item-thumb-icon { font-size:22px; }
+.media-item-info { flex:1; min-width:0; }
+.media-item-title { font-size:13px; font-weight:600; color:#2c3e2d; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.media-item-meta { display:flex; align-items:center; gap:6px; margin-top:3px; }
+.media-item-date { font-size:11px; color:#8a998b; }
+.media-audio-player { width:100%; margin-top:6px; height:28px; }
+.media-video-link { font-size:12px; color:#8b6f47; text-decoration:underline; margin-top:4px; display:inline-block; }
+.btn-danger-ghost { color:#d67d5c; background:transparent; border:none; cursor:pointer; border-radius:6px; padding:4px; }
+.btn-danger-ghost:hover { background:rgba(214,125,92,0.1); }
+.badge-blue { background:rgba(74,130,180,0.12); color:#3a7fba; }
+.badge-purple { background:rgba(130,74,180,0.12); color:#7a3aba; }
+</style>

@@ -74,3 +74,4 @@ export const STORAGE_BUCKET_AUDIO = 'budaya-audio'
 
 // Nama tabel media
 export const TABLE_BUDAYA_MEDIA = 'budaya_media'
+export const TABLE_WISATA_MEDIA = 'wisata_media'
