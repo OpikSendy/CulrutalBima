@@ -16,10 +16,11 @@ import {
 
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
 
-// ─── HELPER: Build public URL ─────────────────────────────────────
-function buildPublicUrl(bucket, path) {
-  const base = SUPABASE_URL.replace(/\/$/, '')
-  return `${base}/storage/v1/object/public/${bucket}/${path}`
+// ─── HELPER: Get public URL via Supabase SDK (FIXED) ─────────────
+// Menggunakan SDK resmi agar URL selalu valid sesuai konfigurasi bucket
+function getPublicUrl(bucket, path) {
+  const { data } = supabase.storage.from(bucket).getPublicUrl(path)
+  return data.publicUrl
 }
 
 // ─── HELPER: Generate nama file unik ──────────────────────────────
@@ -103,11 +104,14 @@ export const budayaService = {
     validateFileSize(file, 5)
     const filename = generateFilename(file.name)
     const path = `${STORAGE_FOLDER_BUDAYA}/${filename}`
+
     const { error: uploadError } = await supabase.storage
       .from(STORAGE_BUCKET)
       .upload(path, file, { upsert: false })
     if (uploadError) throw uploadError
-    const url = buildPublicUrl(STORAGE_BUCKET, path)
+
+    // ✅ Gunakan SDK resmi
+    const url = getPublicUrl(STORAGE_BUCKET, path)
     return { path, url }
   },
 
@@ -190,11 +194,14 @@ export const wisataService = {
     validateFileSize(file, 5)
     const filename = generateFilename(file.name)
     const path = `${STORAGE_FOLDER_WISATA}/${filename}`
+
     const { error: uploadError } = await supabase.storage
       .from(STORAGE_BUCKET)
       .upload(path, file, { upsert: false })
     if (uploadError) throw uploadError
-    const url = buildPublicUrl(STORAGE_BUCKET, path)
+
+    // ✅ Gunakan SDK resmi
+    const url = getPublicUrl(STORAGE_BUCKET, path)
     return { path, url }
   },
 
@@ -217,11 +224,10 @@ export const wisataService = {
 }
 
 // ============================================================
-// BUDAYA MEDIA SERVICE (BARU)
+// BUDAYA MEDIA SERVICE
 // ============================================================
 export const mediaService = {
 
-  // ─── Ambil semua media milik satu budaya ──────────────────
   async getByBudayaId(budayaId) {
     const { data, error } = await supabase
       .from(TABLE_BUDAYA_MEDIA)
@@ -233,7 +239,6 @@ export const mediaService = {
     return data
   },
 
-  // ─── Tambah satu record media ─────────────────────────────
   async addMedia({ budayaId, jenisMedia, urlMedia, storagePath, judul, urutan = 0 }) {
     const { data, error } = await supabase
       .from(TABLE_BUDAYA_MEDIA)
@@ -251,9 +256,7 @@ export const mediaService = {
     return data
   },
 
-  // ─── Hapus satu record media + file dari storage ──────────
   async deleteMedia(id, storagePath, jenisMedia) {
-    // Hapus file dari storage dulu
     if (storagePath) {
       const bucket = jenisMedia === 'video'
         ? STORAGE_BUCKET_VIDEO
@@ -264,11 +267,9 @@ export const mediaService = {
       const { error: storageError } = await supabase.storage
         .from(bucket)
         .remove([storagePath])
-
       if (storageError) console.warn('Gagal hapus file storage:', storageError)
     }
 
-    // Hapus record dari database
     const { error } = await supabase
       .from(TABLE_BUDAYA_MEDIA)
       .delete()
@@ -276,20 +277,15 @@ export const mediaService = {
     if (error) throw error
   },
 
-  // ─── Hapus semua media milik satu budaya ──────────────────
   async deleteAllByBudayaId(budayaId) {
-    // Ambil semua media dulu untuk hapus file storage
     const mediaList = await this.getByBudayaId(budayaId)
-
     for (const media of mediaList) {
       await this.deleteMedia(media.id, media.storage_path, media.jenis_media)
     }
   },
 
-  // ─── Upload gambar tambahan (multiple foto) ───────────────
   async uploadGambar(file) {
     validateFileSize(file, 5)
-
     if (!file.type.startsWith('image/')) {
       throw new Error('File harus berupa gambar (JPG, PNG, WebP)')
     }
@@ -302,14 +298,13 @@ export const mediaService = {
       .upload(path, file, { upsert: false })
     if (error) throw error
 
-    const url = buildPublicUrl(STORAGE_BUCKET, path)
+    // ✅ Gunakan SDK resmi
+    const url = getPublicUrl(STORAGE_BUCKET, path)
     return { path, url }
   },
 
-  // ─── Upload video ─────────────────────────────────────────
   async uploadVideo(file) {
     validateFileSize(file, 50)
-
     if (file.type !== 'video/mp4') {
       throw new Error('Format video harus MP4')
     }
@@ -325,14 +320,13 @@ export const mediaService = {
       })
     if (error) throw error
 
-    const url = buildPublicUrl(STORAGE_BUCKET_VIDEO, path)
+    // ✅ Gunakan SDK resmi
+    const url = getPublicUrl(STORAGE_BUCKET_VIDEO, path)
     return { path, url }
   },
 
-  // ─── Upload audio ─────────────────────────────────────────
   async uploadAudio(file) {
     validateFileSize(file, 10)
-
     const allowedTypes = ['audio/mpeg', 'audio/mp3']
     if (!allowedTypes.includes(file.type)) {
       throw new Error('Format audio harus MP3')
@@ -349,11 +343,11 @@ export const mediaService = {
       })
     if (error) throw error
 
-    const url = buildPublicUrl(STORAGE_BUCKET_AUDIO, path)
+    // ✅ Gunakan SDK resmi
+    const url = getPublicUrl(STORAGE_BUCKET_AUDIO, path)
     return { path, url }
   },
 
-  // ─── Update urutan media ──────────────────────────────────
   async updateUrutan(id, urutan) {
     const { error } = await supabase
       .from(TABLE_BUDAYA_MEDIA)
