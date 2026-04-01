@@ -1133,7 +1133,7 @@ class _BudayaDetailScreenState extends State<BudayaDetailScreen> {
             Row(mainAxisAlignment: MainAxisAlignment.center, children: [
               IconButton(
                 iconSize: 32,
-                icon: const Icon(Icons.replay_15, color: Colors.white70),
+                icon: const Icon(Icons.replay_10, color: Colors.white70),
                 onPressed: () => _audioPlayer.seek(
                     _audioPosition - const Duration(seconds: 15)),
               ),
@@ -1159,7 +1159,7 @@ class _BudayaDetailScreenState extends State<BudayaDetailScreen> {
               const SizedBox(width: 16),
               IconButton(
                 iconSize: 32,
-                icon: const Icon(Icons.forward_15, color: Colors.white70),
+                icon: const Icon(Icons.forward_10, color: Colors.white70),
                 onPressed: () => _audioPlayer.seek(
                     _audioPosition + const Duration(seconds: 15)),
               ),
