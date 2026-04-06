@@ -18,6 +18,7 @@ a {
   color: #646cff;
   text-decoration: inherit;
 }
+
 a:hover {
   color: #535bf2;
 }
@@ -46,9 +47,11 @@ button {
   cursor: pointer;
   transition: border-color 0.25s;
 }
+
 button:hover {
   border-color: #646cff;
 }
+
 button:focus,
 button:focus-visible {
   outline: 4px auto -webkit-focus-ring-color;
@@ -70,10 +73,144 @@ button:focus-visible {
     color: #213547;
     background-color: #ffffff;
   }
+
   a:hover {
     color: #747bff;
   }
+
   button {
     background-color: #f9f9f9;
   }
+}
+
+.sidebar {
+  width: 260px;
+  transition: 0.3s;
+}
+
+/* mobile */
+.sidebar.mobile {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 100%;
+  transform: translateX(-100%);
+  z-index: 1000;
+}
+
+/* open */
+.sidebar.mobile.open {
+  transform: translateX(0);
+}
+
+/* overlay */
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.4);
+}
+
+/* tombol */
+.menu-btn {
+  font-size: 20px;
+  margin-right: 10px;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+/* ─── RESET GLOBAL ────────────────────────────── */
+body {
+  margin: 0;
+  display: block;
+  /* override default flex center */
+  min-height: 100vh;
+  background: #FAF8F3;
+}
+
+#app {
+  max-width: unset;
+  /* override default max-width */
+  margin: 0;
+  padding: 0;
+  text-align: left;
+}
+
+/* ─── APP SHELL ───────────────────────────────── */
+.app-shell {
+  display: flex;
+  min-height: 100vh;
+}
+
+/* ─── MAIN CONTENT ────────────────────────────── */
+.main-content {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  background: #FAF8F3;
+}
+
+.main-mobile {
+  width: 100%;
+}
+
+/* ─── HEADER ──────────────────────────────────── */
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  height: 60px;
+  background: #fff;
+  border-bottom: 1px solid #E8EDE9;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.menu-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #4A7C59;
+  display: flex;
+  align-items: center;
+  padding: 6px;
+  border-radius: 8px;
+  transition: background 0.2s;
+}
+
+.menu-btn:hover {
+  background: rgba(74, 124, 89, 0.1);
+  border-color: transparent;
+}
+
+/* ─── OVERLAY ─────────────────────────────────── */
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  z-index: 1050;
+  backdrop-filter: blur(2px);
+}
+
+/* ─── FADE TRANSITION ─────────────────────────── */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.2s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
 }
