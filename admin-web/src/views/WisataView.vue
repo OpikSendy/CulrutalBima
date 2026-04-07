@@ -501,15 +501,17 @@ async function saveItem() {
 }
 
 function confirmDelete(w) { deleteTarget.value=w; showConfirm.value=true }
+
 async function doDelete() {
   saving.value = true
   try {
-    // Hapus semua media terlebih dahulu
-    try { await wisataMediaService.deleteAllByWisataId(deleteTarget.value.id) } catch(_) {}
+    await wisataMediaService.deleteAllByWisataId(deleteTarget.value.id)
     if (deleteTarget.value.foto_path) await wisataService.deleteFoto(deleteTarget.value.foto_path)
     await wisataService.delete(deleteTarget.value.id)
-    toast('Berhasil dihapus','success'); showConfirm.value=false; await loadData()
-  } catch (e) { toast('Gagal menghapus','error') }
+    toast('Berhasil dihapus', 'success')
+    showConfirm.value = false
+    await loadData()
+  } catch (e) { toast('Gagal menghapus', 'error') }
   finally { saving.value = false }
 }
 
@@ -556,24 +558,24 @@ async function uploadMedia(file) {
     const progressTimer = setInterval(() => {
       if (uploadProgress.value < 85) uploadProgress.value += 10
     }, 300)
-    if (tab === 'gambar') {
-      result = await wisataMediaService.uploadGambar(file)
-    } else if (tab === 'video') {
-      result = await wisataMediaService.uploadVideo(file)
-    } else {
-      result = await wisataMediaService.uploadAudio(file)
-    }
+
+    if (tab === 'gambar') result = await wisataMediaService.uploadGambar(file)
+    else if (tab === 'video') result = await wisataMediaService.uploadVideo(file)
+    else result = await wisataMediaService.uploadAudio(file)
+
     clearInterval(progressTimer)
     uploadProgress.value = 95
+
     const urutan = mediaList.value.filter(m => m.jenis_media === tab).length
     await wisataMediaService.addMedia({
-      wisataId: editItem.value.id,
+      wisataId: editItem.value.id,  // ← wisataId bukan budayaId
       jenisMedia: tab,
       urlMedia: result.url,
       storagePath: result.path,
       judul: mediaJudul.value.trim() || null,
       urutan,
     })
+
     uploadProgress.value = 100
     mediaJudul.value = ''
     toast('Media berhasil diupload', 'success')

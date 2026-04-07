@@ -17,11 +17,10 @@ import {
 
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
 
-// ─── HELPER: Get public URL via Supabase SDK (FIXED) ─────────────
-// Menggunakan SDK resmi agar URL selalu valid sesuai konfigurasi bucket
-function getPublicUrl(bucket, path) {
-  const { data } = supabase.storage.from(bucket).getPublicUrl(path)
-  return data.publicUrl
+export function getStorageUrl(bucket, path) {
+  if (!path) return null
+  const base = SUPABASE_URL.replace(/\/$/, '')
+  return `${base}/storage/v1/object/public/${bucket}/${path}`
 }
 
 // ─── HELPER: Generate nama file unik ──────────────────────────────
@@ -109,14 +108,13 @@ export const budayaService = {
     const filename = generateFilename(file.name)
     const path = `${STORAGE_FOLDER_BUDAYA}/${filename}`
 
-    const { error: uploadError } = await supabase.storage
+    const { error } = await supabase.storage
       .from(STORAGE_BUCKET)
       .upload(path, file, { upsert: false })
-    if (uploadError) throw uploadError
+    if (error) throw error
 
-    // ✅ Gunakan SDK resmi
-    const url = getPublicUrl(STORAGE_BUCKET, path)
-    return { path, url }
+    // ✅ Kembalikan hanya path, URL di-generate di frontend
+    return { path }
   },
 
   async deleteFoto(path) {
@@ -199,14 +197,13 @@ export const wisataService = {
     const filename = generateFilename(file.name)
     const path = `${STORAGE_FOLDER_WISATA}/${filename}`
 
-    const { error: uploadError } = await supabase.storage
+    const { error } = await supabase.storage
       .from(STORAGE_BUCKET)
       .upload(path, file, { upsert: false })
-    if (uploadError) throw uploadError
+    if (error) throw error
 
-    // ✅ Gunakan SDK resmi
-    const url = getPublicUrl(STORAGE_BUCKET, path)
-    return { path, url }
+    // ✅ Kembalikan hanya path, URL di-generate di frontend
+    return { path }
   },
 
   async deleteFoto(path) {
@@ -381,7 +378,7 @@ export const wisataMediaService = {
     const { data, error } = await supabase
       .from(TABLE_WISATA_MEDIA)
       .insert({
-        wisata_id: wisataId,
+        wisata_id: wisataId,       // ← pakai wisata_id bukan budaya_id
         jenis_media: jenisMedia,
         url_media: urlMedia,
         storage_path: storagePath,
@@ -428,30 +425,24 @@ export const wisataMediaService = {
       throw new Error('File harus berupa gambar (JPG, PNG, WebP)')
     }
     const filename = generateFilename(file.name)
-    const path = `${STORAGE_FOLDER_WISATA}/media/${filename}`
-
+    const path = `wisata/media/${filename}`
     const { error } = await supabase.storage
       .from(STORAGE_BUCKET)
       .upload(path, file, { upsert: false })
     if (error) throw error
-
     const url = getPublicUrl(STORAGE_BUCKET, path)
     return { path, url }
   },
 
   async uploadVideo(file) {
     validateFileSize(file, 50)
-    if (file.type !== 'video/mp4') {
-      throw new Error('Format video harus MP4')
-    }
+    if (file.type !== 'video/mp4') throw new Error('Format video harus MP4')
     const filename = generateFilename(file.name)
     const path = `wisata/${filename}`
-
     const { error } = await supabase.storage
       .from(STORAGE_BUCKET_VIDEO)
       .upload(path, file, { upsert: false, contentType: 'video/mp4' })
     if (error) throw error
-
     const url = getPublicUrl(STORAGE_BUCKET_VIDEO, path)
     return { path, url }
   },
@@ -459,26 +450,14 @@ export const wisataMediaService = {
   async uploadAudio(file) {
     validateFileSize(file, 10)
     const allowedTypes = ['audio/mpeg', 'audio/mp3']
-    if (!allowedTypes.includes(file.type)) {
-      throw new Error('Format audio harus MP3')
-    }
+    if (!allowedTypes.includes(file.type)) throw new Error('Format audio harus MP3')
     const filename = generateFilename(file.name)
     const path = `wisata/${filename}`
-
     const { error } = await supabase.storage
       .from(STORAGE_BUCKET_AUDIO)
       .upload(path, file, { upsert: false, contentType: 'audio/mpeg' })
     if (error) throw error
-
     const url = getPublicUrl(STORAGE_BUCKET_AUDIO, path)
     return { path, url }
-  },
-
-  async updateUrutan(id, urutan) {
-    const { error } = await supabase
-      .from(TABLE_WISATA_MEDIA)
-      .update({ urutan })
-      .eq('id', id)
-    if (error) throw error
   },
 }

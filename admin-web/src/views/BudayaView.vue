@@ -134,21 +134,48 @@
             <textarea v-model="form.deskripsi" class="form-textarea" rows="3" placeholder="Deskripsi budaya..."></textarea>
           </div>
           <div class="form-group">
-            <label class="form-label">Foto Utama</label>
-            <div v-if="fotoPreview" class="upload-preview" style="margin-bottom:8px">
-              <img :src="fotoPreview" alt="Preview" />
-              <button type="button" class="upload-preview-remove" @click="removePhoto">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-              </button>
-            </div>
-            <div v-else class="upload-zone" :class="{'drag-over':isDragOver}" @click="$refs.fileInput.click()" @dragover.prevent="isDragOver=true" @dragleave="isDragOver=false" @drop.prevent="onFileDrop">
-              <div class="upload-zone-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-              </div>
-              <div class="upload-zone-text"><strong>Klik untuk upload</strong> atau drag &amp; drop<br><span>JPG, PNG maks. 5MB</span></div>
-            </div>
-            <input ref="fileInput" type="file" accept="image/*" style="display:none" @change="onFileChange" />
-          </div>
+  <label class="form-label">Foto Utama</label>
+
+  <!-- Tampilkan jika ada foto existing ATAU preview file baru -->
+  <div v-if="existingFotoUrl || fotoPreview" class="upload-preview" style="margin-bottom:8px">
+    <img
+      :src="fotoPreview || existingFotoUrl"
+      alt="Preview foto"
+      @error="(e) => e.target.style.opacity = '0.3'"
+    />
+    <button type="button" class="upload-preview-remove" @click="removePhoto">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <line x1="18" y1="6" x2="6" y2="18"/>
+        <line x1="6" y1="6" x2="18" y2="18"/>
+      </svg>
+    </button>
+  </div>
+
+  <!-- Upload zone hanya jika tidak ada foto sama sekali -->
+  <div
+    v-else
+    class="upload-zone"
+    :class="{'drag-over': isDragOver}"
+    @click="$refs.fileInput.click()"
+    @dragover.prevent="isDragOver = true"
+    @dragleave="isDragOver = false"
+    @drop.prevent="onFileDrop"
+  >
+    <div class="upload-zone-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <rect x="3" y="3" width="18" height="18" rx="3"/>
+        <circle cx="8.5" cy="8.5" r="1.5"/>
+        <polyline points="21 15 16 10 5 21"/>
+      </svg>
+    </div>
+    <div class="upload-zone-text">
+      <strong>Klik untuk upload</strong> atau drag &amp; drop<br>
+      <span>JPG, PNG maks. 5MB</span>
+    </div>
+  </div>
+
+  <input ref="fileInput" type="file" accept="image/*" style="display:none" @change="onFileChange" />
+</div>
 
           <!-- ─── MULTIMEDIA SECTION ─── -->
           <div class="media-section">
@@ -397,7 +424,8 @@ const showConfirm   = ref(false)
 const deleteTarget  = ref(null)
 const isDragOver    = ref(false)
 const fotoFile      = ref(null)
-const fotoPreview   = ref(null)
+const existingFotoUrl = ref(null)  
+const fotoPreview     = ref(null)  
 const fileInput     = ref(null)
 const toasts        = ref([])
 const photoViewer   = ref({ visible: false, src: null, name: '', meta: '' })
@@ -511,32 +539,59 @@ function csvEscape(v) { const s=String(v).replace(/"/g,'""'); return /[,"\n]/.te
 function openAdd() {
   editItem.value = null
   form.value = { nama:'', kategori:'', deskripsi:'', asal_daerah:'' }
-  fotoFile.value = null; fotoPreview.value = null; showModal.value = true
+  fotoFile.value = null
+  fotoPreview.value = null
+  existingFotoUrl.value = null   // ← tambah ini
+  showModal.value = true
 }
+
 function openEdit(b) {
   editItem.value = b
   form.value = { nama:b.nama, kategori:b.kategori, deskripsi:b.deskripsi||'', asal_daerah:b.asal_daerah||'' }
-  fotoPreview.value = b.foto_url||null; fotoFile.value = null; showModal.value = true
+  existingFotoUrl.value = b.foto_url || null  // ← simpan URL existing
+  fotoPreview.value = null                    // ← reset preview file baru
+  fotoFile.value = null
+  showModal.value = true
 }
 function closeModal() { showModal.value = false; editItem.value = null }
 
 // ─── Save budaya ──────────────────────────────────────────────────────────────
 async function saveItem() {
-  if (!form.value.nama || !form.value.kategori) { toast('Nama dan kategori wajib diisi','error'); return }
+  if (!form.value.nama || !form.value.kategori) {
+    toast('Nama dan kategori wajib diisi', 'error'); return
+  }
   saving.value = true
   try {
-    let fotoPath = editItem.value?.foto_path||null, fotoUrl = editItem.value?.foto_url||null
+    // Gunakan existingFotoUrl sebagai fallback
+    let fotoPath = editItem.value?.foto_path || null
+    let fotoUrl  = existingFotoUrl.value || editItem.value?.foto_url || null
+
     if (fotoFile.value) {
       const old = editItem.value?.foto_path
       if (old) await budayaService.deleteFoto(old)
       const res = await budayaService.uploadFoto(fotoFile.value)
-      fotoPath = res.path; fotoUrl = res.url
+      fotoPath = res.path
+      fotoUrl  = res.url
     }
-    const payload = { nama:form.value.nama, kategori:form.value.kategori, deskripsi:form.value.deskripsi||null, asal_daerah:form.value.asal_daerah||null, foto_path:fotoPath, foto_url:fotoUrl }
-    if (editItem.value) { await budayaService.update(editItem.value.id, payload); toast('Berhasil diperbarui','success') }
-    else { await budayaService.create(payload); toast('Berhasil ditambahkan','success') }
+
+    const payload = {
+      nama: form.value.nama,
+      kategori: form.value.kategori,
+      deskripsi: form.value.deskripsi || null,
+      asal_daerah: form.value.asal_daerah || null,
+      foto_path: fotoPath,
+      foto_url: fotoUrl,
+    }
+
+    if (editItem.value) {
+      await budayaService.update(editItem.value.id, payload)
+      toast('Berhasil diperbarui', 'success')
+    } else {
+      await budayaService.create(payload)
+      toast('Berhasil ditambahkan', 'success')
+    }
     closeModal(); await loadData()
-  } catch (e) { toast('Gagal menyimpan: '+e.message,'error') }
+  } catch (e) { toast('Gagal menyimpan: ' + e.message, 'error') }
   finally { saving.value = false }
 }
 
@@ -557,8 +612,18 @@ async function doDelete() {
 // ─── Main foto upload ─────────────────────────────────────────────────────────
 function onFileChange(e) { handleFile(e.target.files[0]) }
 function onFileDrop(e) { isDragOver.value=false; handleFile(e.dataTransfer.files[0]) }
-function handleFile(f) { if(!f)return; fotoFile.value=f; fotoPreview.value=URL.createObjectURL(f) }
-function removePhoto() { fotoFile.value=null; fotoPreview.value=null }
+function handleFile(f) {
+  if (!f) return
+  fotoFile.value = f
+  fotoPreview.value = URL.createObjectURL(f)
+}
+
+function removePhoto() {
+  // Hapus keduanya
+  fotoFile.value = null
+  fotoPreview.value = null
+  existingFotoUrl.value = null
+}
 
 // ─── MULTIMEDIA FUNCTIONS ─────────────────────────────────────────────────────
 
